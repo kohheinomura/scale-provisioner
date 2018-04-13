@@ -1,0 +1,21 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test-pod
+  annotations:
+    ccc.ibm.co.jp/vlanid: "50"
+    ccc.ibm.co.jp/ip: "192.168.50.105/24"
+spec:
+  containers:
+  - name: test-pod
+    image: "busybox"
+    command:
+      - sleep
+      - "3600"
+    volumeMounts:
+      - name: spectrum-scale
+        mountPath: "/mnt"
+  volumes:
+    - name: spectrum-scale
+      persistentVolumeClaim:
+        claimName: my-scale-claim

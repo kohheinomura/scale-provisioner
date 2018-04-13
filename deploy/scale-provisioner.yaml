@@ -1,0 +1,65 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: scale-provisioner
+spec:
+  serviceAccount: scale-provisioner-account
+  hostNetwork: true 
+  hostPID: true
+  hostIPC: true
+  containers:
+    - name: scale-provisioner
+      image: scale-provisioner:latest
+      securityContext:
+        privileged: true      
+      imagePullPolicy: "IfNotPresent"
+      env:
+        - name: PV_DIR
+          value: "/gpfs/fs1"
+        - name: FS_NAME
+          value: "fs1"
+      volumeMounts:
+        - name: fs
+          mountPath: /gpfs/fs1/
+        - name: mmfs
+          mountPath: /usr/lpp/mmfs/
+        - name: var-mmfs
+          mountPath: /var/mmfs/
+        - name: var-ras
+          mountPath: /var/adm/ras/
+        - name: usr-lib-x86-64-linux-gnu
+          mountPath: /usr/lib/x86_64-linux-gnu/
+        - name: lib-x86-64-linux-gnu
+          mountPath: /lib/x86_64-linux-gnu/ 
+        - name: usr-bin
+          mountPath: /usr/bin
+        - name: run
+          mountPath: /run
+  nodeSelector:
+    beta.kubernetes.io/arch: amd64
+  volumes:
+    - name: fs
+      hostPath:
+        path: /gpfs/fs1/
+    - name: mmfs
+      hostPath:
+        path: /usr/lpp/mmfs/
+    - name: var-mmfs
+      hostPath:
+        path: /var/mmfs/
+    - name: var-ras
+      hostPath:
+        path: /var/adm/ras/
+    - name: usr-lib-x86-64-linux-gnu
+      hostPath:
+        path: /usr/lib/x86_64-linux-gnu/
+    - name: lib-x86-64-linux-gnu
+      hostPath:
+        path: /lib/x86_64-linux-gnu/
+    - name: usr-bin
+      hostPath:
+        path: /usr/bin
+    - name: run
+      hostPath:
+        path: /run
+
