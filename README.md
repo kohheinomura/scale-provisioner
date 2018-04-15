@@ -1,9 +1,12 @@
+## Overview
+
+Scale-provisioner is one of the dynamic provisioner which uses IBM Spectrum Scale as a storage backend for POD volumes in kubernetes clusters. Scale-provisioner dyanmically creates a persistent voluem as a fileset of Spectrum Scale on its file system.
 
 ## Building and Running Scale Dynamic Provisioner
 
 In order to build scale-provisioner, you must
 
-- have IBM Spectrum Scale v or greater installed
+- have IBM Spectrum Scale cluster configured
 - have go version 1.7 or greater installed
 - have Docker installed
 
@@ -19,11 +22,12 @@ $ go get github.com/kubernetes-incubator/external-storage/
 `clone` scale-provisioner under the extenal-storage directory.
 
 ```console
-$ cd GOROOT/src/github.com/kubernetes-incubator/external-storage/scale-provisioner
-$ clone https://github.com/kohheinomura/scale-provisioner.git
+$ cd $GOPATH/src/github.com/kubernetes-incubator/external-storage/
+$ git clone https://github.com/kohheinomura/scale-provisioner.git
+$ cd scale-provisioner
 ```
 
-We run make. Note that the Docker image needs to be on the node we'll run the pod on. So you may need to tag your image and push it to Docker Hub so that it can be pulled later by the node, or just work on the node and build the image there. 
+Run make to build docker image nameed `scale-provisioner`. Note that the Docker image needs to be on the node we'll run the pod on. So you may need to tag your image and push it to Docker Hub so that it can be pulled later by the node, or just work on the node and build the image there. 
 
 ```console
 $ make
@@ -105,6 +109,8 @@ EOF
 
 ## Authorizing provisioners for RBAC
 
+Our scale-provisioner runs on a cluster with RBAC enabled so you must create the following service account, role, and binding.
+
 ```console
 $ cat > scale-account.yaml <<EOF
 apiVersion: v1
@@ -158,6 +164,8 @@ $ kubectl create -f scale-binding.yaml
 
 ## Using our Spectrum Scale Dynamic Provisioner
 
+Deploy scale-provisioer.
+
 ```console
 $ kubectl create -f scale-provisioner.yaml
 ```
@@ -184,6 +192,8 @@ EOF
 $ kubectl create -f scale-storage-class.yaml
 ```
 
+The following yaml file specifies the details of volume and we requested the persistent volume with size of 2G from spectrum scale storage class.
+
 ```console
 $ cat > test-claim.yaml << EOF
 kind: PersistentVolumeClaim
@@ -201,6 +211,7 @@ spec:
 EOF
 $ kubectl create -f test-claim.yaml
 ```
+Review the status of the new persistent volume claim. You can see that the persistent volume claim ‘`my-scale-claim` is bound to the persistent volume ‘pvc-ff3856b0-3eeb-11e8-a874-0050569b54a8’.
 
 ```console
 $ kubectl get pvc
@@ -214,7 +225,7 @@ NAME                                       CAPACITY   ACCESS MODES   RECLAIM POL
 pvc-ff3856b0-3eeb-11e8-a874-0050569b54a8   2G         RWX            Delete           Bound     default/my-scale-claim   spectrum-scale                  5s
 ```
 
-
+Also you can see that related PV is created by scale-provisioner as a spectrum scale fileset and linked to the directory on the spectrum scale file system with specified quota size.
 
 ```console
 $  /usr/lpp/mmfs/bin/mmlsfileset fs1
@@ -233,6 +244,8 @@ $ /usr/lpp/mmfs/bin/mmlsquota -j pvc-ff3856b0-3eeb-11e8-a874-0050569b54a8 fs1
 Filesystem type             KB      quota      limit   in_doubt    grace |    files   quota    limit in_doubt    grace  Remarks
 fs1        FILESET           0    2097152    2097152          0     none |        1       0        0        0     none
 ```
+
+Deploy an application that uses the new volume claim.
 
 ```console
 $ cat > test-pod.yaml << EOF
@@ -258,6 +271,8 @@ EOF
 $ kubectl create -f test-pod.yaml
 ```
 
+Now you can see PV on the spectrum scale file system is mounted to the container at `/mnt`. 
+
 ```console
 $ kubectl exec -it test-pod sh
 / # df
@@ -282,6 +297,14 @@ tmpfs                    65536         0     65536   0% /proc/timer_stats
 tmpfs                    65536         0     65536   0% /proc/sched_debug
 tmpfs                133844736         0 133844736   0% /sys/firmware
 ```
+
+## Licensing
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 
 
